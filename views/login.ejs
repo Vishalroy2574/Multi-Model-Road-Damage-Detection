@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%- include('partials/head') %>
+  </head>
+  <body class="login-page">
+    <main class="login-shell container-fluid px-3 px-md-4 pb-5">
+      <section class="login-hero mt-4">
+        <div class="login-brand">
+          <div class="login-brand__badge">RD</div>
+          <div>
+            <h1 class="login-brand__title">Road Damage Reporter</h1>
+            <div class="login-brand__subtitle">SMART CIVIC RESPONSE PLATFORM</div>
+          </div>
+        </div>
+        <a class="btn login-hero__action" href="#login-card">Login</a>
+      </section>
+
+      <section class="login-panel mx-auto">
+        <div class="card login-card" id="login-card">
+          <div class="card-body p-4 p-md-5">
+            <div class="text-center mb-4">
+              <h2 class="login-card__title">Login</h2>
+            </div>
+
+            <% if (error) { %>
+            <div class="alert alert-danger" role="alert"><%= error %></div>
+            <% } %>
+            <% if (info) { %>
+            <div class="alert alert-info" role="alert"><%= info %></div>
+            <% } %>
+
+            <form action="/login" method="post" class="vstack gap-3">
+              <div>
+                <label for="login-email" class="form-label login-label">Email</label>
+                <input id="login-email" name="emailId" type="email" class="form-control login-input" placeholder="name@gmail.com" required />
+              </div>
+              <div>
+                <label for="login-password" class="form-label login-label">Password</label>
+                <input id="login-password" name="password" type="password" class="form-control login-input" minlength="6" required />
+              </div>
+              <button type="submit" class="btn login-submit">Login</button>
+            </form>
+
+            <button
+              class="btn btn-link login-register-toggle"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#registerPanel"
+              aria-expanded="false"
+              aria-controls="registerPanel"
+            >
+              Don't have an account? Register here
+            </button>
+
+            <div class="collapse mt-3" id="registerPanel">
+              <div class="login-register-panel">
+                <h3 class="login-register-title">Create account</h3>
+                <form action="/signup" method="post" class="vstack gap-3 mt-3">
+                  <div>
+                    <label for="signup-name" class="form-label login-label">Name</label>
+                    <input id="signup-name" name="name" type="text" class="form-control login-input" placeholder="Your name" required />
+                  </div>
+                  <div>
+                    <label for="signup-email" class="form-label login-label">Email</label>
+                    <input id="signup-email" name="emailId" type="email" class="form-control login-input" placeholder="name@gmail.com" required />
+                  </div>
+                  <div>
+                    <label for="signup-password" class="form-label login-label">Password</label>
+                    <input id="signup-password" name="password" type="password" class="form-control login-input" minlength="6" required />
+                  </div>
+                  <button type="submit" class="btn login-submit login-submit--secondary">Sign up</button>
+                </form>
+              </div>
+            </div>
+
+            <p class="small text-muted mt-4 mb-0 text-center">
+              We only accept addresses ending in <code>@gmail.com</code>.
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

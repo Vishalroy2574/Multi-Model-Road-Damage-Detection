@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%- include('partials/head') %>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  </head>
+  <body class="bg-dark text-light">
+    <%- include('partials/nav') %>
+    <main class="container main-shell">
+      <%
+        var pendingCount = 0;
+        var resolvedCount = 0;
+        reports.forEach(function (r) {
+          var workflowClosed = r.status === 'completed' || r.status === 'cancelled';
+          if (workflowClosed) {
+            resolvedCount++;
+          } else {
+            pendingCount++;
+          }
+        });
+      %>
+      <section class="page-hero dashboard-hero">
+        <div class="row g-4 align-items-center">
+          <div class="col-lg-7">
+            <div class="page-kicker">Shared report queue</div>
+            <h1 class="page-title display-5 mb-3">All submitted complaints, status, and AI analysis in one place.</h1>
+            <p class="page-subtitle">
+              Every submitted report is visible here for users, authority, and admin. Review the detected damage types and open the full case detail whenever you need it. Reports are ordered by confidence first, so the clearest damage appears at the top.
+            </p>
+          </div>
+          <div class="col-lg-5">
+            <div class="metric-grid">
+              <div class="metric-tile">
+                <div class="metric-label">Total reports</div>
+                <div class="metric-value"><%= reports.length %></div>
+                <div class="metric-note">Everything submitted to the shared queue.</div>
+              </div>
+              <div class="metric-tile">
+                <div class="metric-label">Pending triage</div>
+                <div class="metric-value"><%= pendingCount %></div>
+                <div class="metric-note">Still waiting for review or action.</div>
+              </div>
+              <div class="metric-tile">
+                <div class="metric-label">Resolved</div>
+                <div class="metric-value"><%= resolvedCount %></div>
+                <div class="metric-note">Cases closed by authority or removed from queue.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <% if (reports.length === 0) { %>
+      <div class="surface-card mt-4 text-center p-5">
+        <p class="fs-4 mb-2">No reports yet.</p>
+        <p class="text-secondary mb-4">Use the + button to file the first complaint and make it visible to everyone in the system.</p>
+        <a href="/report" class="btn btn-primary">Create your first report</a>
+      </div>
+      <% } %>
+
+      <div class="row g-4 mt-2">
+        <% reports.forEach(function (r) { %>
+        <div class="col-12">
+          <div class="surface-card report-card">
+            <div class="row g-0">
+              <div class="col-md-4">
+                <div class="report-card__media">
+                  <div class="report-card__media-label">Before photo</div>
+                  <a href="<%= r.imageURL %>" target="_blank" rel="noreferrer" class="report-card__image-link" aria-label="Open before photo">
+                    <img src="<%= r.imageURL %>" class="img-fluid report-card__image" alt="Report" />
+                  </a>
+                </div>
+              </div>
+              <div class="col-md-8">
+                <div class="card-body">
+                  <div class="d-flex flex-wrap justify-content-between gap-2 align-items-start mb-2">
+                    <div>
+                      <div class="small text-secondary"><%= r.created_date %></div>
+                      <h5 class="card-title mt-1 mb-1"><%= r.location && r.location.length > 48 ? r.location.substring(0, 48) + '...' : r.location %></h5>
+                    </div>
+                    <span class="badge bg-secondary">Case #<%= r.case_id %></span>
+                  </div>
+                  <div class="mb-2">
+                    <%
+                      var queueResolved = r.triageStatus === 'resolved' || r.status === 'completed' || r.status === 'cancelled';
+                    %>
+                    <span class="badge <%= queueResolved ? 'bg-success' : 'bg-warning text-dark' %>">Queue: <%= queueResolved ? 'Resolved' : 'Pending triage' %></span>
+                    <span class="badge bg-secondary">Priority <%= r.priorityScore %>/100</span>
+                    <span class="badge border border-light text-light text-capitalize"><%= r.impactLevel %> impact</span>
+                    <% if (r.analysisConfidence != null) { %>
+                    <span class="badge bg-dark border border-secondary text-light"><%= Math.round(Number(r.analysisConfidence) * 100) %>% confidence</span>
+                    <% } %>
+                    <% if (r.analysisSeverity) { %>
+                    <span class="badge bg-dark border border-secondary text-light text-capitalize"><%= r.analysisSeverity %> area</span>
+                    <% } %>
+                  </div>
+                  <% if (r.damageTypes && r.damageTypes.length) { %>
+                  <p class="mb-2 small">
+                    <% r.damageTypes.forEach(function (t) { %>
+                    <span class="badge bg-info text-dark me-1 mb-1"><%= t %></span>
+                    <% }) %>
+                  </p>
+                  <% } %>
+                  <% if (r.aiDescription) { %>
+                  <p class="small text-secondary mb-2"><%= r.aiDescription.length > 180 ? r.aiDescription.substring(0, 180) + '...' : r.aiDescription %></p>
+                  <% } %>
+                  <p class="card-text small mb-3"><%= r.description && r.description.length > 180 ? r.description.substring(0, 180) + '...' : r.description %></p>
+                  <% if (r.proofImageURL) { %>
+                  <div class="summary-note mb-3 report-proof-media">
+                    <div class="small text-uppercase text-secondary fw-semibold mb-2">Resolved road photo</div>
+                    <a href="<%= r.proofImageURL %>" target="_blank" rel="noreferrer" class="report-card__image-link" aria-label="Open resolved road photo">
+                      <img src="<%= r.proofImageURL %>" class="img-fluid rounded border border-secondary w-100 report-proof-image" alt="Resolved road photo" />
+                    </a>
+                  </div>
+                  <% } %>
+                  <div class="d-flex flex-wrap gap-2">
+                    <button class="btn btn-primary btn-sm" type="button" data-bs-toggle="modal" data-bs-target="#modal<%= r.case_id %>">View report</button>
+                    <span class="small text-secondary align-self-center">Workflow status: <%= r.status.charAt(0).toUpperCase() + r.status.slice(1) %></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <%- include('partials/report_modal', { r: r }) %>
+        </div>
+        <% }) %>
+      </div>
+    </main>
+    <%- include('partials/fab') %>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="/js/comments.js"></script>
+    <script src="/js/dashboard-map.js"></script>
+  </body>
+</html>

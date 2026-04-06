@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%- include('partials/head') %>
+  </head>
+  <body class="bg-dark text-light">
+    <%- include('partials/nav') %>
+    <main class="container main-shell text-center" style="max-width: 520px">
+      <div class="card surface-card bg-secondary-subtle border-secondary text-light mt-5 pt-3">
+        <div class="card-body">
+          <div class="rounded-circle border border-secondary bg-dark d-inline-flex align-items-center justify-content-center mb-3" style="width: 120px; height: 120px">
+            <span class="display-6 fw-bold text-primary"><%= (user.name || user.emailId || "?").slice(0, 1).toUpperCase() %></span>
+          </div>
+          <h2 class="h4"><%= user.name %></h2>
+          <p class="text-secondary"><a href="mailto:<%= user.emailId %>" class="text-reset"><%= user.emailId %></a></p>
+        </div>
+        <hr class="border-secondary m-0" />
+        <div class="row g-0">
+          <div class="col-4 p-3 border-end border-secondary">
+            <div class="small text-secondary">Submitted</div>
+            <div class="fs-4 fw-bold"><%= submittedCount %></div>
+          </div>
+          <div class="col-4 p-3 border-end border-secondary">
+            <div class="small text-secondary">Approved</div>
+            <div class="fs-4 fw-bold"><%= approvedCount %></div>
+          </div>
+          <div class="col-4 p-3">
+            <div class="small text-secondary">Completed</div>
+            <div class="fs-4 fw-bold"><%= completedCount %></div>
+          </div>
+        </div>
+        <div class="p-4 reward-gradient rounded-bottom">
+          <p class="small text-white-50 mb-1">Every Detection Counts!</p>
+          <h3 class="h5 text-white">Your Contribution Score</h3>
+          <% if (score > 0) { %>
+          <img src="https://webstockreview.net/images/good-clipart-well-done-2.png" alt="" class="img-fluid mb-2" style="max-height: 120px" />
+          <% } else { %>
+          <img src="https://ignitewoo.com/wp-content/uploads/2012/08/woocommerce-loyalty-rewards.png" alt="" class="img-fluid mb-2" style="max-height: 100px" />
+          <% } %>
+          <span class="badge fs-6" style="background: linear-gradient(95deg, #f27121, #e94057, #8a2387)"><%= score %> / 100</span>
+        </div>
+      </div>
+    </main>
+    <%- include('partials/fab') %>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

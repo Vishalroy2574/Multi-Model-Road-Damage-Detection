@@ -1,0 +1,129 @@
+<%
+  var labels = ['Submitted', 'Approved', 'Working', 'Completed', 'Cancelled'];
+  var hasCoords = r.latitude !== undefined && r.latitude !== null && r.longitude !== undefined && r.longitude !== null;
+  var confidence = r.analysisConfidence != null ? Math.round(Number(r.analysisConfidence) * 100) : null;
+  var confidenceBar = confidence == null ? 'bg-secondary' : confidence >= 75 ? 'bg-success' : confidence >= 50 ? 'bg-warning' : 'bg-danger';
+  var confidenceTone = confidence == null ? 'secondary' : confidence >= 75 ? 'success' : confidence >= 50 ? 'warning text-dark' : 'danger';
+  var analyzerLabels = {
+    'gemini-vision': 'Gemini vision',
+    'openai-vision': 'OpenAI vision',
+    'local-cv-heuristic': 'Local CV heuristic',
+    demo: 'Demo mode',
+    fallback: 'Fallback'
+  };
+  var analyzerLabel = analyzerLabels[r.analysisAnalyzer] || r.analysisAnalyzer || 'Model';
+  var areaPct = r.analysisAreaRatio != null ? Math.round(Number(r.analysisAreaRatio) * 100) : null;
+  var severityLabel = r.analysisSeverity ? r.analysisSeverity.charAt(0).toUpperCase() + r.analysisSeverity.slice(1) : 'Unclassified';
+%>
+<div class="modal fade" id="modal<%= r.case_id %>" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content bg-dark text-light border-secondary">
+      <div class="modal-header border-secondary">
+        <div>
+          <div class="section-label mb-1">Case detail</div>
+          <h5 class="modal-title mb-0">Report #<%= r.case_id %></h5>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" data-modal-close="true" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-lg-6">
+            <div class="summary-note mb-3 report-card__media">
+              <div class="small text-uppercase text-secondary fw-semibold mb-2">Before photo</div>
+              <a href="<%= r.imageURL %>" target="_blank" rel="noreferrer" class="report-card__image-link" aria-label="Open before photo">
+                <img src="<%= r.imageURL %>" class="img-fluid rounded border border-secondary w-100 report-proof-image" alt="Report image" />
+              </a>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <div class="summary-note mb-3">
+              <div class="d-flex flex-wrap justify-content-between gap-2 align-items-start">
+                <div>
+                  <div class="small text-secondary">Submitted on <%= r.dateShort || r.created_date %></div>
+                  <div class="fw-bold"><%= r.location %></div>
+                </div>
+                <span class="badge <%= r.triageStatus === 'resolved' ? 'bg-success' : 'bg-warning text-dark' %>"><%= r.triageStatus === 'resolved' ? 'Resolved' : 'Pending' %></span>
+              </div>
+            </div>
+
+            <div class="analysis-panel mb-3 surface-card">
+              <div class="analysis-panel__hero">
+                <div>
+                  <div class="analysis-kicker">AI inspection</div>
+                  <div class="analysis-title"><%= r.analysisAnalyzer ? analyzerLabel : 'Model summary' %></div>
+                  <p class="analysis-copy">The model's draft summary is displayed here as report context.</p>
+                </div>
+                <div class="analysis-score">
+                  <div class="analysis-score__value"><%= confidence != null ? confidence : '--' %></div>
+                  <div class="analysis-score__label"><%= confidence != null ? 'confidence' : 'unavailable' %></div>
+                </div>
+              </div>
+              <div class="analysis-meter mt-3">
+                <div class="progress analysis-progress">
+                  <div class="progress-bar <%= confidenceBar %>" style="width: <%= confidence || 0 %>%"></div>
+                </div>
+              </div>
+              <div class="d-flex flex-wrap gap-2 px-4 mt-3">
+                <span class="badge bg-dark border border-secondary text-light">Severity: <%= severityLabel %></span>
+                <span class="badge bg-dark border border-secondary text-light">Area: <%= areaPct != null ? areaPct + '%' : '--' %></span>
+              </div>
+              <div class="analysis-description">
+                <% if (r.analysisAnalyzer) { %>
+                <span class="badge bg-dark border border-secondary text-light mb-2">Source: <%= analyzerLabel %></span>
+                <% } %>
+                <% if (r.damageTypes && r.damageTypes.length) { %>
+                <div class="mb-2">
+                  <% r.damageTypes.forEach(function (t) { %><span class="badge bg-info text-dark me-1 mb-1"><%= t %></span><% }) %>
+                </div>
+                <% } %>
+                <div class="small text-secondary mb-2">AI-generated description</div>
+                <div><%= r.aiDescription || 'No AI description was stored for this report.' %></div>
+              </div>
+            </div>
+
+            <p class="mb-1"><strong>Severity:</strong> <%= r.severity %> / 10</p>
+            <p class="mb-1">
+              <strong>AI triage:</strong>
+              <span class="badge <%= r.triageStatus === 'resolved' ? 'bg-success' : 'bg-warning text-dark' %>"><%= r.triageStatus === 'resolved' ? 'Resolved' : 'Pending' %></span>
+              <span class="badge bg-secondary">Priority <%= r.priorityScore %>/100</span>
+              <span class="badge bg-dark border border-secondary text-capitalize"><%= r.impactLevel %> impact</span>
+            </p>
+            <p class="mb-1"><strong>Workflow status:</strong> <%= r.status.charAt(0).toUpperCase() + r.status.slice(1) %></p>
+            <div class="d-flex flex-wrap gap-1 my-2">
+              <% for (var si = 0; si <= 4; si++) { %>
+                <span class="badge <%= si === r.stepNumber ? 'bg-primary' : 'bg-secondary' %>"><%= labels[si] %></span>
+              <% } %>
+            </div>
+
+            <div class="comment-panel">
+              <p class="mb-2"><strong>Reporter description</strong></p>
+              <p class="text-secondary mb-0"><%= r.description %></p>
+            </div>
+
+            <% if (r.proofImageURL) { %>
+            <div class="summary-note mt-3 report-proof-media">
+              <div class="small text-uppercase text-secondary fw-semibold mb-2">Resolved road photo</div>
+              <a href="<%= r.proofImageURL %>" target="_blank" rel="noreferrer">
+                <img src="<%= r.proofImageURL %>" class="img-fluid rounded border border-secondary w-100 report-proof-image" alt="Proof image" />
+              </a>
+            </div>
+            <% } %>
+
+            <% if (hasCoords) { %>
+            <div class="report-mini-map rounded border border-secondary mt-3" id="mini-map-<%= r.case_id %>" data-lat="<%= r.latitude %>" data-lng="<%= r.longitude %>" style="height: 260px"></div>
+            <% } else { %>
+            <p class="text-secondary small mt-3">Map view is unavailable for this report because it does not include coordinates.</p>
+            <% } %>
+          </div>
+        </div>
+        <hr class="border-secondary my-4" />
+        <h6 class="mb-3">Comments</h6>
+        <div id="comments-<%= r.case_id %>" class="mb-3 small" data-case-id="<%= r.case_id %>"></div>
+        <div class="input-group">
+            <textarea class="form-control bg-secondary text-light border-secondary" id="comment-input-<%= r.case_id %>" rows="2" placeholder="Write a message..."></textarea>
+          <button class="btn btn-primary comment-submit" type="button" data-case-id="<%= r.case_id %>" data-user-type="<%= typeof commentUserType !== 'undefined' ? commentUserType : 'U' %>">Submit</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

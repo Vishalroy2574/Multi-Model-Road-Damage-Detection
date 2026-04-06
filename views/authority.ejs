@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%- include('partials/head') %>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  </head>
+  <body class="authority-page">
+    <main class="authority-shell container-fluid px-3 px-md-4 pb-5">
+      <%
+        function statusLabel(value) {
+          const normalized = String(value || "submitted");
+          if (normalized === "submitted") return "Pending";
+          if (normalized === "approved" || normalized === "working") return "In Progress";
+          if (normalized === "completed") return "Resolved";
+          if (normalized === "cancelled") return "Pending";
+          return "Pending";
+        }
+        function clip(text, len) {
+          const value = String(text || "");
+          return value.length > len ? value.substring(0, len) + "..." : value;
+        }
+        function coordText(r) {
+          if (r.latitude == null || r.longitude == null) return "N/A";
+          return Number(r.latitude).toFixed(6) + ", " + Number(r.longitude).toFixed(6);
+        }
+        const accountName = user.name || (user.emailId ? user.emailId.split("@")[0] : "Authority");
+        const accountRole = (user.role || "authority").toUpperCase();
+        const canSendProof = user.role === "authority" || user.role === "admin";
+        const statusEditable = typeof canEditStatus !== "undefined" ? canEditStatus : true;
+        const adminUsers = typeof users !== "undefined" ? users : [];
+        const initialA = (accountName || "A").trim().charAt(0).toUpperCase();
+        const initialB = (accountName || "A").trim().split(/\s+/)[1];
+        const avatarText = initialB ? initialA + initialB.charAt(0).toUpperCase() : initialA;
+      %>
+
+      <section class="authority-hero mt-4">
+        <div class="authority-hero__brand">
+          <div class="authority-badge">RD</div>
+          <div>
+            <h1 class="authority-brand-title">Road Damage Reporter</h1>
+            <div class="authority-brand-subtitle">SMART CIVIC RESPONSE PLATFORM</div>
+          </div>
+        </div>
+        <div class="authority-account">
+          <div class="authority-account__avatar"><%= avatarText %></div>
+          <div class="authority-account__body">
+            <div class="authority-account__name"><%= accountName %></div>
+            <div class="authority-account__role"><%= accountRole %> ACCOUNT</div>
+          </div>
+          <div class="authority-account__actions">
+            <a class="btn btn-sm authority-logout-btn" href="/logout" aria-label="Log out of the authority panel">Logout</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="authority-tabs-wrap">
+        <ul class="nav nav-tabs authority-tabs" id="authorityTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="table-tab" data-bs-toggle="tab" data-bs-target="#table-pane" type="button" role="tab" aria-controls="table-pane" aria-selected="true">Table View</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="map-tab" data-bs-toggle="tab" data-bs-target="#map-pane" type="button" role="tab" aria-controls="map-pane" aria-selected="false">Map View</button>
+          </li>
+          <% if (user.role === "admin") { %>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="users-tab" data-bs-toggle="tab" data-bs-target="#users-pane" type="button" role="tab" aria-controls="users-pane" aria-selected="false">Users</button>
+          </li>
+          <% } %>
+        </ul>
+      </section>
+
+      <section class="authority-filters">
+        <label class="form-label authority-label" for="status-filter">Filter by Status:</label>
+        <select id="status-filter" class="form-select authority-select">
+          <option value="all">All</option>
+          <option value="submitted">Submitted</option>
+          <option value="approved">Approved</option>
+          <option value="working">Working</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </section>
+
+      <div class="tab-content mt-4">
+        <div class="tab-pane fade show active" id="table-pane" role="tabpanel" aria-labelledby="table-tab">
+          <div class="authority-table-wrap">
+            <div class="table-responsive">
+              <table class="table align-middle authority-table mb-0">
+                <thead>
+                  <tr>
+                    <th>Image</th>
+                    <th>Report ID</th>
+                    <th>Reporter</th>
+                    <th>Location</th>
+                    <th>Description</th>
+                    <th>Current Status</th>
+                    <th>Submitted</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% if (reports.length === 0) { %>
+                  <tr>
+                    <td colspan="8" class="text-center py-5 text-muted">No reports have been submitted yet.</td>
+                  </tr>
+                  <% } %>
+                  <% reports.forEach(function (r) { %>
+                  <%
+                    var confidencePct = r.analysisConfidence != null ? Math.round(Number(r.analysisConfidence) * 100) : null;
+                    var confidenceClass = confidencePct == null ? "bg-secondary" : confidencePct >= 75 ? "bg-success" : confidencePct >= 50 ? "bg-warning text-dark" : "bg-danger";
+                    var displayStatus = r.status === "completed" ? "completed" : (r.status === "approved" || r.status === "working" ? "approved" : "submitted");
+                  %>
+                  <tr data-status="<%= r.status %>" data-case-id="<%= r.case_id %>">
+                    <td>
+                      <div class="authority-image-stack">
+                        <img src="<%= r.imageURL %>" class="authority-thumb" alt="Report image" />
+                        <div class="authority-confidence-line">
+                          <span class="authority-confidence-label">Confidence</span>
+                          <span class="badge rounded-pill <%= confidenceClass %> authority-confidence-badge"><%= confidencePct != null ? confidencePct + '%' : '--' %></span>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="fw-semibold">#<%= r.case_id %></td>
+                    <td>
+                      <div class="fw-semibold"><%= r.reporterName %></div>
+                      <div class="small text-muted"><%= r.reporterEmail %></div>
+                    </td>
+                    <td>
+                      <div class="fw-semibold"><%= clip(r.location || "N/A", 30) %></div>
+                      <div class="small text-muted"><%= coordText(r) %></div>
+                    </td>
+                    <td>
+                      <div><%= clip(r.description || "No description", 34) %></div>
+                    </td>
+                    <td>
+                      <% if (statusEditable) { %>
+                      <select class="form-select authority-status-select" data-case-id="<%= r.case_id %>" aria-label="Update status for case <%= r.case_id %>">
+                        <option value="submitted" <%= displayStatus === "submitted" ? "selected" : "" %>>Pending</option>
+                        <option value="approved" <%= displayStatus === "approved" ? "selected" : "" %>>In Progress</option>
+                        <option value="completed" <%= displayStatus === "completed" ? "selected" : "" %>>Resolved</option>
+                      </select>
+                      <div class="small text-muted mt-1">Auto-saves on change for authority.</div>
+                      <% } else { %>
+                      <span class="badge rounded-pill <%= r.status === 'completed' ? 'bg-success' : r.status === 'approved' || r.status === 'working' ? 'bg-primary' : 'bg-danger' %>">
+                        <%= statusLabel(r.status) %>
+                      </span>
+                      <div class="small text-muted mt-1">View only for admin.</div>
+                      <% } %>
+                    </td>
+                    <td class="text-nowrap"><%= r.dateShort %></td>
+                    <td>
+                      <div class="d-flex flex-wrap gap-2">
+                        <button class="btn btn-authority-remarks" type="button" data-bs-toggle="modal" data-bs-target="#remarksModal-<%= r.case_id %>">Remarks</button>
+                        <% if (canSendProof && r.status === "completed") { %>
+                        <button class="btn btn-authority-proof" type="button" data-bs-toggle="modal" data-bs-target="#proofModal-<%= r.case_id %>">Send Resolve Pic</button>
+                        <% } %>
+                        <% if (user.role === "admin") { %>
+                        <button class="btn btn-authority-delete" type="button" data-case-id="<%= r.case_id %>" onclick="window.deleteAuthorityReport && window.deleteAuthorityReport(this, '<%= r.case_id %>')">Delete</button>
+                        <% } %>
+                        <% if (r.proofImageURL) { %>
+                        <span class="badge rounded-pill bg-success align-self-center">Proof attached</span>
+                        <% } %>
+                      </div>
+                    </td>
+                  </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-pane fade" id="map-pane" role="tabpanel" aria-labelledby="map-tab">
+          <div class="authority-map-shell">
+            <div id="authority-map" class="authority-map" aria-label="Authority report map"></div>
+          </div>
+        </div>
+
+        <% if (user.role === "admin") { %>
+        <div class="tab-pane fade" id="users-pane" role="tabpanel" aria-labelledby="users-tab">
+          <div class="authority-table-wrap">
+            <div class="table-responsive">
+              <table class="table align-middle authority-table mb-0">
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Account</th>
+                    <th>Created</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% if (adminUsers.length === 0) { %>
+                  <tr>
+                    <td colspan="5" class="text-center py-5 text-muted">No users found.</td>
+                  </tr>
+                  <% } %>
+                  <% adminUsers.forEach(function (u) { %>
+                  <tr data-user-id="<%= u.userId %>">
+                    <td>
+                      <div class="fw-semibold"><%= u.name %></div>
+                      <% if (u.isProtected) { %>
+                      <div class="small text-muted">Protected system account</div>
+                      <% } %>
+                    </td>
+                    <td><%= u.emailId %></td>
+                    <td>
+                      <select class="form-select user-role-select" data-user-id="<%= u.userId %>" <%= u.isProtected ? "disabled" : "" %>>
+                        <option value="user" <%= u.role === "user" ? "selected" : "" %>>User</option>
+                        <option value="authority" <%= u.role === "authority" ? "selected" : "" %>>Authority</option>
+                        <option value="admin" <%= u.role === "admin" ? "selected" : "" %>>Admin</option>
+                      </select>
+                    </td>
+                    <td>
+                      <div class="form-check form-switch">
+                        <input class="form-check-input user-active-switch" type="checkbox" role="switch" data-user-id="<%= u.userId %>" <%= u.isActive ? "checked" : "" %> <%= u.isProtected ? "disabled" : "" %> />
+                        <label class="form-check-label">Active</label>
+                      </div>
+                    </td>
+                    <td class="text-nowrap"><%= u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "--" %></td>
+                  </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <% } %>
+      </div>
+
+      <script id="authority-report-data" type="application/json"><%- JSON.stringify(reports).replace(/</g, "\\u003c") %></script>
+      <% reports.forEach(function (r) { %>
+      <div class="modal fade" id="remarksModal-<%= r.case_id %>" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+          <div class="modal-content bg-white text-dark border-0 authority-remarks-modal">
+            <div class="modal-header border-0">
+              <div>
+                <div class="section-label mb-1">Remarks</div>
+                <h5 class="modal-title mb-0">Case #<%= r.case_id %></h5>
+              </div>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" data-modal-close="true" aria-label="Close"></button>
+            </div>
+            <div class="modal-body pt-0">
+              <div class="authority-remarks-summary">
+                <div class="fw-semibold"><%= r.reporterName %></div>
+                <div class="text-muted small"><%= r.reporterEmail %></div>
+                <div class="mt-2"><%= clip(r.description || "No description provided.", 220) %></div>
+              </div>
+              <% if (r.proofImageURL) { %>
+              <div class="authority-proof-preview mt-3">
+                <div class="small text-uppercase text-muted fw-semibold mb-2">Proof image</div>
+                <a href="<%= r.proofImageURL %>" target="_blank" rel="noreferrer">
+                  <img src="<%= r.proofImageURL %>" class="img-fluid rounded border border-secondary" alt="Proof image" />
+                </a>
+              </div>
+              <% } %>
+              <div id="comments-<%= r.case_id %>" class="authority-comments mt-3" data-case-id="<%= r.case_id %>"></div>
+              <div class="input-group mt-3">
+                <textarea class="form-control" id="comment-input-<%= r.case_id %>" rows="2" placeholder="Write an authority remark..."></textarea>
+                <button class="btn btn-primary comment-submit" type="button" data-case-id="<%= r.case_id %>" data-user-type="A">Submit</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <% if (canSendProof && r.status === "completed") { %>
+      <div class="modal fade" id="proofModal-<%= r.case_id %>" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content authority-modal">
+            <div class="modal-header">
+              <div>
+                <div class="section-label mb-1">Send proof</div>
+                <h5 class="modal-title mb-0">Case #<%= r.case_id %></h5>
+              </div>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" data-modal-close="true" aria-label="Close"></button>
+            </div>
+            <form class="authority-proof-form" data-case-id="<%= r.case_id %>">
+              <div class="modal-body">
+                <p class="text-muted mb-3">Upload a photo of the resolved road after the case is marked Resolved.</p>
+                <div class="summary-note mb-3">
+                  <div class="small text-uppercase text-muted fw-semibold mb-2">Case photos</div>
+                  <div class="row g-3">
+                    <div class="col-12 <%= r.proofImageURL ? 'col-md-6' : '' %>">
+                      <div class="small text-uppercase text-muted fw-semibold mb-2">Before photo</div>
+                      <a href="<%= r.imageURL %>" target="_blank" rel="noreferrer" class="report-card__image-link" aria-label="Open before photo">
+                        <img src="<%= r.imageURL %>" class="img-fluid rounded border border-secondary w-100 report-proof-image" alt="Before photo" />
+                      </a>
+                    </div>
+                    <% if (r.proofImageURL) { %>
+                    <div class="col-12 col-md-6">
+                      <div class="small text-uppercase text-muted fw-semibold mb-2">Current proof photo</div>
+                      <a href="<%= r.proofImageURL %>" target="_blank" rel="noreferrer" class="report-card__image-link" aria-label="Open proof photo">
+                        <img src="<%= r.proofImageURL %>" class="img-fluid rounded border border-secondary w-100 report-proof-image" alt="Proof photo" />
+                      </a>
+                    </div>
+                    <% } %>
+                  </div>
+                </div>
+                <label class="form-label" for="proof-file-<%= r.case_id %>">Resolved road photo</label>
+                <input class="form-control authority-proof-input" type="file" id="proof-file-<%= r.case_id %>" accept="image/png,image/jpeg,image/jpg" required />
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-modal-close="true">Close</button>
+                <button type="submit" class="btn btn-primary">Upload proof</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+      <% } %>
+      <% }) %>
+
+      <div class="authority-footer-note mt-4">
+        <span class="badge bg-light text-dark border">Shared reports</span>
+        <span class="badge bg-light text-dark border">Role: <%= accountRole %></span>
+        <span class="badge bg-light text-dark border">Sorted by confidence</span>
+      </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="/js/comments.js"></script>
+    <script src="/js/authority.js"></script>
+  </body>
+</html>

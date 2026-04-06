@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%- include('partials/head') %>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  </head>
+  <body class="bg-dark text-light">
+    <%- include('partials/nav') %>
+    <main class="container main-shell">
+      <section class="page-hero dashboard-hero">
+        <div class="row g-4 align-items-center">
+          <div class="col-lg-7">
+            <div class="page-kicker">Route planning</div>
+            <h1 class="page-title display-5 mb-3">Plan a drive and preview road risk along the way.</h1>
+            <p class="page-subtitle">Search a start point and destination, then inspect the route map for reports that may affect the trip.</p>
+          </div>
+          <div class="col-lg-5">
+            <div class="metric-grid">
+              <div class="metric-tile">
+                <div class="metric-label">Start</div>
+                <div class="metric-value">Search first</div>
+                <div class="metric-note">Use a place name or address.</div>
+              </div>
+              <div class="metric-tile">
+                <div class="metric-label">Destination</div>
+                <div class="metric-value">Pick a target</div>
+                <div class="metric-note">See pothole reports along the route.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <div class="surface-card mt-4">
+        <div class="card-body p-4 p-md-5">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Source</label>
+              <input type="text" id="src-input" class="form-control bg-dark text-light border-secondary" placeholder="Search place" autocomplete="off" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Destination</label>
+              <input type="text" id="dst-input" class="form-control bg-dark text-light border-secondary" placeholder="Search place" autocomplete="off" />
+            </div>
+          </div>
+          <button type="button" id="route-btn" class="btn btn-primary mt-3">Get route</button>
+          <div id="route-stats" class="mt-3 text-info small"></div>
+          <div id="map-wrap" class="mt-3 border border-secondary rounded overflow-hidden" style="height: 400px"></div>
+        </div>
+      </div>
+    </main>
+    <%- include('partials/fab') %>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="/js/routing.js"></script>
+  </body>
+</html>

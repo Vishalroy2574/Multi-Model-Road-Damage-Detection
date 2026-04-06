@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%- include('partials/head') %>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://unpkg.com/filepond@4/dist/filepond.min.css" rel="stylesheet" />
+    <link href="https://unpkg.com/filepond-plugin-image-preview@4/dist/filepond-plugin-image-preview.css" rel="stylesheet" />
+  </head>
+  <body class="bg-dark text-light">
+    <%- include('partials/nav') %>
+    <main class="container main-shell pb-5">
+      <section class="page-hero dashboard-hero">
+        <div class="row g-4 align-items-center">
+          <div class="col-lg-7">
+            <div class="page-kicker">Citizen reporting</div>
+            <h1 class="page-title display-5 mb-3">Capture a road defect and turn it into a polished report.</h1>
+            <p class="page-subtitle">
+              Upload a clear road photo or use the camera. The vision engine reviews the image, drafts a summary, and keeps the workflow ready for submission.
+            </p>
+          </div>
+          <div class="col-lg-5">
+            <div class="metric-grid">
+              <div class="metric-tile">
+                <div class="metric-label">AI analysis</div>
+                <div class="metric-value">Gemini-ready</div>
+                <div class="metric-note">Vision output is shown before you submit.</div>
+              </div>
+              <div class="metric-tile">
+                <div class="metric-label">Map step</div>
+                <div class="metric-value">Pin the location</div>
+                <div class="metric-note">Search, click the map, or use GPS.</div>
+              </div>
+              <div class="metric-tile">
+                <div class="metric-label">Review step</div>
+                <div class="metric-value">Edit the draft</div>
+                <div class="metric-note">Keep the final description in your control.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="surface-card mt-4">
+        <div class="card-body p-4 p-md-5">
+          <div id="step-choose" class="row g-3">
+            <div class="col-md-6">
+              <button type="button" class="report-action" id="btn-upload">
+                <span class="report-action__icon">01</span>
+                <span>
+                  <span class="report-action__title d-block">Upload image</span>
+                  <span class="report-action__copy d-block">Choose a road photo from your device for inspection.</span>
+                </span>
+              </button>
+            </div>
+            <div class="col-md-6">
+              <button type="button" class="report-action" id="btn-camera">
+                <span class="report-action__icon">02</span>
+                <span>
+                  <span class="report-action__title d-block">Use camera</span>
+                  <span class="report-action__copy d-block">Capture the scene directly from your phone or laptop.</span>
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <div id="camera-wrap" class="mt-4 d-none text-center">
+            <video id="cam-video" class="w-100 rounded border border-secondary" playsinline autoplay muted style="max-height: 360px"></video>
+            <div class="mt-2 d-flex justify-content-center gap-2 flex-wrap">
+              <button type="button" class="btn btn-primary" id="cam-capture">Capture</button>
+              <button type="button" class="btn btn-outline-light" id="cam-close">Close</button>
+            </div>
+          </div>
+
+          <div id="pond-wrap" class="mt-4 d-none">
+            <input type="file" id="pond" />
+          </div>
+
+          <div id="detect-loading" class="mt-4 d-none">
+            <div class="progress analysis-progress">
+              <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" style="width: 100%"></div>
+            </div>
+            <p class="small text-secondary mt-2 mb-0">Running pothole detection...</p>
+          </div>
+
+          <div id="report-invalid" class="mt-4 d-none"></div>
+          <div id="report-form" class="mt-4 d-none"></div>
+        </div>
+      </section>
+    </main>
+    <%- include('partials/fab') %>
+    <script>
+      window.__APP__ = {
+        appUrl: "<%= appUrl %>"
+      };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/filepond-plugin-file-validate-type@1/dist/filepond-plugin-file-validate-type.js"></script>
+    <script src="https://unpkg.com/filepond-plugin-file-validate-size@2/dist/filepond-plugin-file-validate-size.js"></script>
+    <script src="https://unpkg.com/filepond-plugin-image-preview@4/dist/filepond-plugin-image-preview.js"></script>
+    <script src="https://unpkg.com/filepond@4/dist/filepond.js"></script>
+    <script src="/js/report.js"></script>
+  </body>
+</html>
