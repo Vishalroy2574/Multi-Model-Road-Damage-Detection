@@ -22,7 +22,7 @@ function homeForRole(role) {
 
 function renderLogin(res, extras = {}) {
   return res.status(extras.status || 200).render("login", {
-    title: "Road Damage Reporting System",
+    title: "Multi Model Road Damage Detection Reporting And Monitoring",
     error: extras.error || "",
     info: extras.info || "",
   });
